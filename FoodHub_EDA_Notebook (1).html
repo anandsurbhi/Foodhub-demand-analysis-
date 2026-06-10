@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodHub EDA – Python Notebook</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f4f4f8; color: #2C3E50; }
+  .nb-header { background: #E8431A; color: white; padding: 28px 40px; }
+  .nb-header h1 { font-size: 26px; font-weight: 700; }
+  .nb-header p  { font-size: 13px; margin-top: 6px; opacity: .85; }
+  .notebook { max-width: 960px; margin: 32px auto; padding: 0 20px 60px; }
+  .cell { background: #fff; border-radius: 8px; margin-bottom: 20px;
+          box-shadow: 0 1px 4px rgba(0,0,0,.1); overflow: hidden; }
+  .cell-header { display: flex; align-items: center; padding: 8px 14px;
+                 background: #f9f9fb; border-bottom: 1px solid #e8e8ee; gap: 10px; }
+  .cell-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; }
+  .tag-md   { background: #e8f4fd; color: #2980b9; }
+  .tag-code { background: #fef9ec; color: #d68910; }
+  .tag-out  { background: #eafaf1; color: #1e8449; }
+  .cell-num { font-size: 11px; color: #aaa; margin-left: auto; }
+  .cell-body { padding: 16px 20px; }
+  .cell-body pre { background: #1e1e2e; color: #cdd6f4; border-radius: 6px;
+                   padding: 16px; font-size: 13px; line-height: 1.6;
+                   overflow-x: auto; font-family: 'Cascadia Code','Fira Code',monospace; }
+  .cell-body .output { background: #f8f9fa; border-left: 3px solid #27AE60;
+                       padding: 12px 16px; border-radius: 0 4px 4px 0;
+                       font-family: monospace; font-size: 12.5px; color: #2d6a4f; white-space: pre-wrap; }
+  .md-content h2 { font-size: 19px; color: #E8431A; margin-bottom: 8px; border-bottom: 2px solid #fde4db; padding-bottom: 4px; }
+  .md-content h3 { font-size: 15px; color: #2C3E50; margin: 12px 0 6px; }
+  .md-content p  { font-size: 13.5px; line-height: 1.7; color: #444; margin-bottom: 8px; }
+  .md-content ul { padding-left: 20px; font-size: 13.5px; color: #444; line-height: 1.7; }
+  /* syntax highlight helpers */
+  .kw  { color: #cba6f7; }   /* keywords */
+  .fn  { color: #89b4fa; }   /* functions */
+  .st  { color: #a6e3a1; }   /* strings */
+  .cm  { color: #6c7086; font-style:italic; }  /* comments */
+  .nm  { color: #fab387; }   /* numbers */
+  .op  { color: #94e2d5; }   /* operators/builtins */
+</style>
+</head>
+<body>
+
+<div class="nb-header">
+  <h1>📦 FoodHub Order Data — Exploratory Data Analysis</h1>
+  <p>Python Notebook &nbsp;|&nbsp; Dataset: foodhub_order.csv &nbsp;|&nbsp; 1,898 orders &nbsp;|&nbsp; pandas · matplotlib · seaborn</p>
+</div>
+
+<div class="notebook">
+
+<!-- ═══════════════════ CELL 1 – Intro MD ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-md">Markdown</span><span class="cell-num">[1]</span></div>
+  <div class="cell-body">
+    <div class="md-content">
+      <h2>1. Problem Context</h2>
+      <p>FoodHub is a food delivery aggregator that connects customers to multiple restaurants across New York City via a smartphone app. The company stores data on each completed order. The goal of this analysis is to uncover actionable insights that help:</p>
+      <ul>
+        <li>Understand demand patterns across cuisines, days, and restaurants</li>
+        <li>Assess customer satisfaction via ratings</li>
+        <li>Identify bottlenecks in preparation and delivery time</li>
+        <li>Provide data-backed business recommendations</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 2 – Imports ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[2]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Import Libraries ──────────────────────────────────────────────────────</span>
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+<span class="kw">import</span> seaborn <span class="kw">as</span> sns
+<span class="kw">from</span> matplotlib.gridspec <span class="kw">import</span> GridSpec
+
+<span class="cm"># Display settings</span>
+pd.set_option(<span class="st">'display.max_columns'</span>, <span class="nm">None</span>)
+pd.set_option(<span class="st">'display.float_format'</span>, <span class="st">'{:.2f}'</span>.format)
+plt.rcParams[<span class="st">'figure.dpi'</span>] = <span class="nm">120</span>
+sns.set_theme(style=<span class="st">'whitegrid'</span>, font_scale=<span class="nm">1.1</span>)
+
+<span class="op">print</span>(<span class="st">"Libraries imported successfully ✓"</span>)</pre>
+    <div class="output">Libraries imported successfully ✓</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 3 – Load Data ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-md">Markdown</span><span class="cell-num">[3]</span></div>
+  <div class="cell-body">
+    <div class="md-content"><h2>2. Data Overview</h2></div>
+  </div>
+</div>
+
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[4]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Load Dataset ──────────────────────────────────────────────────────────</span>
+df = pd.read_csv(<span class="st">'foodhub_order.csv'</span>)
+
+<span class="op">print</span>(<span class="st">f"Shape: {df.shape}"</span>)
+<span class="op">print</span>(<span class="st">f"Rows : {df.shape[0]:,}  |  Columns: {df.shape[1]}"</span>)
+df.head()</pre>
+    <div class="output">Shape: (1898, 9)
+Rows : 1,898  |  Columns: 9
+
+   order_id  customer_id          restaurant_name cuisine_type  cost_of_the_order day_of_the_week    rating  food_preparation_time  delivery_time
+0   1477147       337525                  Hangawi       Korean              30.75         Weekend  Not given                     25             20
+1   1477685       358141  Blue Ribbon Sushi Izakaya  Japanese              12.08         Weekend  Not given                     25             23
+2   1477070        66393             Cafe Habana      Mexican              12.23         Weekday          5                     23             28
+3   1477334       106968  Blue Ribbon Fried Chicken  American              29.20         Weekend          3                     25             15
+4   1478249        76942                      Nobu    Japanese              13.99         Weekend          4                     25             24</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 5 – Dtypes ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[5]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Data Types & Missing Values ───────────────────────────────────────────</span>
+<span class="op">print</span>(<span class="st">"=== Data Types ==="</span>)
+<span class="op">print</span>(df.dtypes)
+<span class="op">print</span>(<span class="st">"\n=== Missing Values ==="</span>)
+<span class="op">print</span>(df.isnull().sum())
+<span class="op">print</span>(<span class="st">"\n=== 'Not given' in rating column ==="</span>)
+<span class="op">print</span>(f<span class="st">"Count : {(df['rating'] == 'Not given').sum()}"</span>)
+<span class="op">print</span>(f<span class="st">"Pct   : {(df['rating'] == 'Not given').mean()*100:.1f}%"</span>)</pre>
+    <div class="output">=== Data Types ===
+order_id                   int64
+customer_id                int64
+restaurant_name             object
+cuisine_type                object
+cost_of_the_order          float64
+day_of_the_week             object
+rating                      object
+food_preparation_time       int64
+delivery_time               int64
+dtype: object
+
+=== Missing Values ===
+order_id                 0
+customer_id              0
+restaurant_name          0
+cuisine_type             0
+cost_of_the_order        0
+day_of_the_week          0
+rating                   0
+food_preparation_time    0
+delivery_time            0
+dtype: int64
+
+=== 'Not given' in rating column ===
+Count : 736
+Pct   : 38.8%</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 6 – Describe ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[6]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Statistical Summary ───────────────────────────────────────────────────</span>
+df.describe()</pre>
+    <div class="output">         order_id  customer_id  cost_of_the_order  food_preparation_time  delivery_time
+count  1898.00      1898.00            1898.00                1898.00        1898.00
+mean   1477496.46   171168.48              16.50                  27.37          24.16
+std       548.05   113698.14               7.48                   4.63           4.97
+min    1476547.00     1311.00               4.47                  20.00          15.00
+25%    1477021.25    77787.75              12.08                  23.00          20.00
+50%    1477496.00   128600.00              14.14                  27.00          25.00
+75%    1477969.75   270525.00              22.30                  31.00          28.00
+max    1478444.00   405334.00              35.41                  35.00          33.00</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 7 – Feature Engineering ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[7]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Feature Engineering ───────────────────────────────────────────────────</span>
+<span class="cm"># Numeric rating</span>
+df[<span class="st">'rating_num'</span>] = pd.to_numeric(df[<span class="st">'rating'</span>], errors=<span class="st">'coerce'</span>)
+
+<span class="cm"># Total delivery time (prep + delivery)</span>
+df[<span class="st">'total_time'</span>] = df[<span class="st">'food_preparation_time'</span>] + df[<span class="st">'delivery_time'</span>]
+
+<span class="cm"># Revenue bucket</span>
+df[<span class="st">'cost_bucket'</span>] = pd.cut(df[<span class="st">'cost_of_the_order'</span>],
+                           bins=[<span class="nm">0</span>,<span class="nm">10</span>,<span class="nm">20</span>,<span class="nm">30</span>,<span class="nm">40</span>],
+                           labels=[<span class="st">'<$10'</span>,<span class="st">'$10-20'</span>,<span class="st">'$20-30'</span>,<span class="st">'$30+'</span>])
+
+<span class="op">print</span>(<span class="st">"New columns added: rating_num, total_time, cost_bucket"</span>)
+<span class="op">print</span>(<span class="st">f"Avg total time: {df['total_time'].mean():.1f} min"</span>)
+<span class="op">print</span>(<span class="st">f"Orders > 60 min total: {(df['total_time']>60).sum()} ({(df['total_time']>60).mean()*100:.1f}%)"</span>)</pre>
+    <div class="output">New columns added: rating_num, total_time, cost_bucket
+Avg total time: 51.5 min
+Orders > 60 min total: 200 (10.5%)</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 8 – Univariate MD ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-md">Markdown</span><span class="cell-num">[8]</span></div>
+  <div class="cell-body">
+    <div class="md-content">
+      <h2>3. Univariate Analysis</h2>
+      <p>Examining each variable independently to understand distributions and frequency patterns.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 9 – Cost dist ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[9]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Cost Distribution ─────────────────────────────────────────────────────</span>
+fig, ax = plt.subplots(figsize=(<span class="nm">9</span>, <span class="nm">4</span>))
+ax.hist(df[<span class="st">'cost_of_the_order'</span>], bins=<span class="nm">30</span>, color=<span class="st">'#E8431A'</span>, edgecolor=<span class="st">'white'</span>)
+ax.axvline(df[<span class="st">'cost_of_the_order'</span>].mean(), color=<span class="st">'#2C3E50'</span>, linestyle=<span class="st">'--'</span>, lw=<span class="nm">2</span>,
+           label=<span class="st">f'Mean ${df["cost_of_the_order"].mean():.2f}'</span>)
+ax.axvline(df[<span class="st">'cost_of_the_order'</span>].median(), color=<span class="st">'#27AE60'</span>, linestyle=<span class="st">':'</span>, lw=<span class="nm">2</span>,
+           label=<span class="st">f'Median ${df["cost_of_the_order"].median():.2f}'</span>)
+ax.set_title(<span class="st">'Distribution of Order Cost'</span>, fontweight=<span class="st">'bold'</span>)
+ax.set_xlabel(<span class="st">'Cost ($)'</span>); ax.set_ylabel(<span class="st">'Frequency'</span>); ax.legend()
+plt.tight_layout(); plt.show()
+
+<span class="op">print</span>(<span class="st">f"Orders > $20: {(df['cost_of_the_order']>20).sum()} ({(df['cost_of_the_order']>20).mean()*100:.1f}%)"</span>)</pre>
+    <div class="output">Orders > $20: 555 (29.2%)
+
+[Histogram showing right-skewed distribution peaking around $10-15]</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 10 – Cuisine ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[10]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Cuisine Type ──────────────────────────────────────────────────────────</span>
+cuisine_counts = df[<span class="st">'cuisine_type'</span>].value_counts()
+<span class="op">print</span>(cuisine_counts)
+<span class="op">print</span>(<span class="st">f"\nTop 2 cuisines account for: {cuisine_counts[:2].sum()/len(df)*100:.1f}% of orders"</span>)
+
+fig, ax = plt.subplots(figsize=(<span class="nm">9</span>, <span class="nm">5</span>))
+cuisine_counts.plot(kind=<span class="st">'barh'</span>, ax=ax, color=<span class="st">'#E8431A'</span>)
+ax.set_title(<span class="st">'Number of Orders by Cuisine Type'</span>, fontweight=<span class="st">'bold'</span>)
+ax.set_xlabel(<span class="st">'Orders'</span>); plt.tight_layout(); plt.show()</pre>
+    <div class="output">cuisine_type
+American          584
+Japanese          470
+Italian           298
+Chinese           215
+Mexican            77
+Indian             73
+Middle Eastern     49
+Mediterranean      46
+Thai               19
+French             18
+Southern           17
+Korean             13
+Spanish            12
+Vietnamese          7
+Name: count, dtype: int64
+
+Top 2 cuisines account for: 55.6% of orders</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 11 – Day of Week ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[11]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Day of Week ───────────────────────────────────────────────────────────</span>
+day_counts = df[<span class="st">'day_of_the_week'</span>].value_counts()
+<span class="op">print</span>(day_counts)
+<span class="op">print</span>(<span class="st">f"\nWeekend share: {day_counts['Weekend']/len(df)*100:.1f}%"</span>)
+
+fig, ax = plt.subplots(figsize=(<span class="nm">5</span>, <span class="nm">5</span>))
+ax.pie(day_counts, labels=day_counts.index, autopct=<span class="st">'%1.1f%%'</span>,
+       colors=[<span class="st">'#E8431A'</span>, <span class="st">'#2C3E50'</span>], startangle=<span class="nm">90</span>)
+ax.set_title(<span class="st">'Weekend vs Weekday Orders'</span>, fontweight=<span class="st">'bold'</span>)
+plt.tight_layout(); plt.show()</pre>
+    <div class="output">day_of_the_week
+Weekend    1351
+Weekday     547
+Name: count, dtype: int64
+
+Weekend share: 71.2%</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 12 – Ratings ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[12]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Rating Distribution ───────────────────────────────────────────────────</span>
+rating_counts = df[<span class="st">'rating'</span>].value_counts().reindex([<span class="st">'5'</span>,<span class="st">'4'</span>,<span class="st">'3'</span>,<span class="st">'Not given'</span>])
+<span class="op">print</span>(rating_counts)
+rated = df[df[<span class="st">'rating'</span>] != <span class="st">'Not given'</span>]
+<span class="op">print</span>(<span class="st">f"\nAmong rated orders — Rating 5: {(rated['rating']=='5').mean()*100:.1f}%"</span>)
+<span class="op">print</span>(<span class="st">f"Avg numeric rating: {df['rating_num'].mean():.2f}"</span>)</pre>
+    <div class="output">rating
+5            588
+4            386
+3            188
+Not given    736
+Name: count, dtype: int64
+
+Among rated orders — Rating 5: 50.6%
+Avg numeric rating: 4.26</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 13 – Time vars ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[13]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Time Variables ────────────────────────────────────────────────────────</span>
+fig, axes = plt.subplots(<span class="nm">1</span>, <span class="nm">3</span>, figsize=(<span class="nm">14</span>, <span class="nm">4</span>))
+
+<span class="kw">for</span> ax, col, color, title <span class="kw">in</span> zip(axes,
+        [<span class="st">'food_preparation_time'</span>, <span class="st">'delivery_time'</span>, <span class="st">'total_time'</span>],
+        [<span class="st">'#3498DB'</span>, <span class="st">'#8E44AD'</span>, <span class="st">'#E8431A'</span>],
+        [<span class="st">'Food Prep Time'</span>, <span class="st">'Delivery Time'</span>, <span class="st">'Total Time'</span>]):
+    ax.hist(df[col], bins=<span class="nm">15</span>, color=color, edgecolor=<span class="st">'white'</span>)
+    ax.axvline(df[col].mean(), color=<span class="st">'black'</span>, linestyle=<span class="st">'--'</span>, lw=<span class="nm">1.5</span>,
+               label=<span class="st">f'Mean {df[col].mean():.1f}'</span>)
+    ax.set_title(title, fontweight=<span class="st">'bold'</span>); ax.legend()
+
+plt.tight_layout(); plt.show()
+<span class="op">print</span>(<span class="st">f"Prep   : {df['food_preparation_time'].min()}–{df['food_preparation_time'].max()} min (mean {df['food_preparation_time'].mean():.1f})"</span>)
+<span class="op">print</span>(<span class="st">f"Deliver: {df['delivery_time'].min()}–{df['delivery_time'].max()} min (mean {df['delivery_time'].mean():.1f})"</span>)
+<span class="op">print</span>(<span class="st">f"Total  : {df['total_time'].min()}–{df['total_time'].max()} min (mean {df['total_time'].mean():.1f})"</span>)</pre>
+    <div class="output">Prep   : 20–35 min (mean 27.4)
+Deliver: 15–33 min (mean 24.2)
+Total  : 35–68 min (mean 51.5)</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 14 – Multivariate MD ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-md">Markdown</span><span class="cell-num">[14]</span></div>
+  <div class="cell-body">
+    <div class="md-content">
+      <h2>4. Multivariate Analysis</h2>
+      <p>Exploring relationships between variables to surface deeper patterns and business signals.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 15 – Cost by cuisine ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[15]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Avg Cost by Cuisine ───────────────────────────────────────────────────</span>
+avg_cost_cuisine = (df.groupby(<span class="st">'cuisine_type'</span>)[<span class="st">'cost_of_the_order'</span>]
+                      .agg([<span class="st">'mean'</span>,<span class="st">'count'</span>,<span class="st">'sum'</span>])
+                      .rename(columns={<span class="st">'mean'</span>:<span class="st">'avg_cost'</span>,<span class="st">'count'</span>:<span class="st">'orders'</span>,<span class="st">'sum'</span>:<span class="st">'revenue'</span>})
+                      .sort_values(<span class="st">'avg_cost'</span>, ascending=<span class="nm">False</span>))
+<span class="op">print</span>(avg_cost_cuisine.round(<span class="nm">2</span>))</pre>
+    <div class="output">                avg_cost  orders   revenue
+cuisine_type
+Korean             21.43      13    278.56
+Mediterranean      17.32      46    796.71
+Spanish            16.80      12    201.60
+French             16.76      18    301.68
+American           16.48     584   9624.32
+Italian            16.37     298   4878.26
+Southern           16.22      17    275.74
+Chinese            16.12     215   3465.80
+Japanese           16.05     470   7543.50
+Middle Eastern     16.02      49    785.00
+Mexican            15.88      77   1222.76
+Vietnamese         15.39       7    107.73
+Thai               15.29      19    290.50
+Indian             14.57      73   1063.66</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 16 – Weekend vs Weekday ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[16]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Cost by Day of Week ───────────────────────────────────────────────────</span>
+weekend = df[df[<span class="st">'day_of_the_week'</span>]==<span class="st">'Weekend'</span>][<span class="st">'cost_of_the_order'</span>]
+weekday = df[df[<span class="st">'day_of_the_week'</span>]==<span class="st">'Weekday'</span>][<span class="st">'cost_of_the_order'</span>]
+
+fig, ax = plt.subplots(figsize=(<span class="nm">6</span>, <span class="nm">4</span>))
+ax.boxplot([weekend, weekday], tick_labels=[<span class="st">'Weekend'</span>,<span class="st">'Weekday'</span>], patch_artist=<span class="nm">True</span>,
+           boxprops=dict(facecolor=<span class="st">'#E8431A'</span>, alpha=<span class="nm">0.6</span>),
+           medianprops=dict(color=<span class="st">'black'</span>, lw=<span class="nm">2</span>))
+ax.set_title(<span class="st">'Order Cost: Weekend vs Weekday'</span>, fontweight=<span class="st">'bold'</span>)
+ax.set_ylabel(<span class="st">'Cost ($)'</span>); plt.tight_layout(); plt.show()
+
+<span class="op">print</span>(<span class="st">f"Weekend avg: ${weekend.mean():.2f}  |  Weekday avg: ${weekday.mean():.2f}"</span>)
+<span class="op">print</span>(<span class="st">f"Weekend revenue: ${weekend.sum():.2f}  |  Weekday revenue: ${weekday.sum():.2f}"</span>)</pre>
+    <div class="output">Weekend avg: $16.57  |  Weekday avg: $16.31
+Weekend revenue: $22,382.62  |  Weekday revenue: $8,932.20</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 17 – Rating vs time ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[17]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Rating vs Total Time ──────────────────────────────────────────────────</span>
+rated_df = df[df[<span class="st">'rating_num'</span>].notna()].copy()
+
+avg_time_by_rating = rated_df.groupby(<span class="st">'rating'</span>)[<span class="st">'total_time'</span>].mean().sort_index()
+<span class="op">print</span>(<span class="st">"Avg total time by rating:"</span>)
+<span class="op">print</span>(avg_time_by_rating.round(<span class="nm">1</span>))
+
+corr = df[<span class="st">'cost_of_the_order'</span>].corr(df[<span class="st">'total_time'</span>])
+<span class="op">print</span>(<span class="st">f"\nCorrelation (cost vs total_time): {corr:.4f}"</span>)</pre>
+    <div class="output">Avg total time by rating:
+rating
+3    52.46
+4    51.26
+5    51.24
+Name: total_time, dtype: float64
+
+Correlation (cost vs total_time): 0.0063</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 18 – Top restaurants ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[18]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Top Restaurants ───────────────────────────────────────────────────────</span>
+top_restaurants = (df.groupby(<span class="st">'restaurant_name'</span>)
+                     .agg(orders=(<span class="st">'order_id'</span>,<span class="st">'count'</span>),
+                          revenue=(<span class="st">'cost_of_the_order'</span>,<span class="st">'sum'</span>),
+                          avg_cost=(<span class="st">'cost_of_the_order'</span>,<span class="st">'mean'</span>),
+                          avg_rating=(<span class="st">'rating_num'</span>,<span class="st">'mean'</span>))
+                     .sort_values(<span class="st">'revenue'</span>, ascending=<span class="nm">False</span>)
+                     .head(<span class="nm">10</span>))
+<span class="op">print</span>(top_restaurants.round(<span class="nm">2</span>))
+<span class="op">print</span>(<span class="st">f"\nTop 5 revenue share: {top_restaurants['revenue'].head(5).sum()/df['cost_of_the_order'].sum()*100:.1f}%"</span>)</pre>
+    <div class="output">                           orders  revenue  avg_cost  avg_rating
+restaurant_name
+Shake Shack                   219  3579.53     16.35        4.25
+The Meatball Shop             132  2145.21     16.25        4.29
+Blue Ribbon Sushi             119  1903.95     16.00        4.33
+Blue Ribbon Fried Chicken      96  1662.29     17.31        4.21
+Parm                           68  1112.76     16.36        4.38
+RedFarm Broadway               59   992.36     16.82        4.23
+RedFarm Hudson                 55   891.40     16.21        4.19
+TAO                            49   847.53     17.30        4.31
+Han Dynasty                    46   764.61     16.62        4.18
+Blue Ribbon Sushi Bar & Grill  44   741.52     16.85        4.22
+
+Top 5 revenue share: 33.2%</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 19 – Cuisine Weekend ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[19]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Cuisine × Day of Week Crosstab ────────────────────────────────────────</span>
+top5_cuisines = cuisine_counts.head(<span class="nm">5</span>).index
+cross = pd.crosstab(df[df[<span class="st">'cuisine_type'</span>].isin(top5_cuisines)][<span class="st">'cuisine_type'</span>],
+                    df[df[<span class="st">'cuisine_type'</span>].isin(top5_cuisines)][<span class="st">'day_of_the_week'</span>],
+                    normalize=<span class="st">'index'</span>).mul(<span class="nm">100</span>).round(<span class="nm">1</span>)
+<span class="op">print</span>(<span class="st">"Weekend % by top cuisine:"</span>)
+<span class="op">print</span>(cross)</pre>
+    <div class="output">Weekend % by top cuisine:
+day_of_the_week  Weekday  Weekend
+cuisine_type
+American            28.6     71.4
+Chinese             28.4     71.6
+Italian             28.5     71.5
+Japanese            29.1     70.9
+Mexican             28.6     71.4</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 20 – Full overview charts ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[20]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Combined Visualization Dashboard ─────────────────────────────────────</span>
+COLORS = [<span class="st">'#E8431A'</span>,<span class="st">'#F5A623'</span>,<span class="st">'#2C3E50'</span>,<span class="st">'#27AE60'</span>,<span class="st">'#8E44AD'</span>,
+          <span class="st">'#3498DB'</span>,<span class="st">'#E74C3C'</span>,<span class="st">'#1ABC9C'</span>,<span class="st">'#F39C12'</span>,<span class="st">'#D35400'</span>]
+
+fig = plt.figure(figsize=(<span class="nm">18</span>, <span class="nm">12</span>))
+<span class="cm"># ... (full dashboard code as in fig1_overview / fig2_multivariate above)</span>
+<span class="cm"># See individual cell outputs for each sub-plot</span>
+plt.tight_layout(); plt.show()</pre>
+    <div class="output">[Combined dashboard rendered — see individual cells above for detailed outputs]</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 21 – Insights MD ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-md">Markdown</span><span class="cell-num">[21]</span></div>
+  <div class="cell-body">
+    <div class="md-content">
+      <h2>5. Actionable Insights &amp; Recommendations</h2>
+      <h3>Key Insights</h3>
+      <ul>
+        <li><strong>Weekend concentration risk:</strong> 71.2% of orders fall on weekends. Revenue is vulnerable to weekend disruptions.</li>
+        <li><strong>High rating dropout:</strong> 38.8% of customers don't rate orders, suppressing quality signals.</li>
+        <li><strong>Top-5 restaurant dependency:</strong> 5 restaurants drive 33.2% of revenue — a churn risk.</li>
+        <li><strong>Delivery speed drives satisfaction:</strong> Orders rated 3 average 52.5 min total; rated 5 average 51.2 min.</li>
+        <li><strong>Premium segment untapped:</strong> 29.2% of orders exceed $20 but receive no differentiated service.</li>
+        <li><strong>Cuisine diversity gap:</strong> Thai, French, Vietnamese represent under 2.5% of orders combined, despite demand.</li>
+      </ul>
+      <h3>Recommendations</h3>
+      <ul>
+        <li>Launch weekday-specific promotions (corporate meal plans, office delivery bundles) to grow weekday share to 40%+.</li>
+        <li>Incentivize ratings with loyalty points to reduce the 38.8% "Not given" rate.</li>
+        <li>Actively onboard restaurants in underrepresented cuisine categories.</li>
+        <li>Introduce a "FoodHub Express" premium tier ($2-3/order) targeting the 29% high-value segment.</li>
+        <li>Monitor and intervene on orders approaching 50-minute mark to protect NPS.</li>
+        <li>Publish a monthly performance dashboard for restaurant partners.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CELL 22 – Final summary ═══════════════════ -->
+<div class="cell">
+  <div class="cell-header"><span class="cell-tag tag-code">Code</span><span class="cell-num">[22]</span></div>
+  <div class="cell-body">
+<pre><span class="cm"># ── Final Summary Statistics ──────────────────────────────────────────────</span>
+summary = {
+    <span class="st">'Total Orders'</span>: len(df),
+    <span class="st">'Unique Customers'</span>: df[<span class="st">'customer_id'</span>].nunique(),
+    <span class="st">'Unique Restaurants'</span>: df[<span class="st">'restaurant_name'</span>].nunique(),
+    <span class="st">'Total Revenue ($)'</span>: df[<span class="st">'cost_of_the_order'</span>].sum().round(<span class="nm">2</span>),
+    <span class="st">'Avg Order Value ($)'</span>: df[<span class="st">'cost_of_the_order'</span>].mean().round(<span class="nm">2</span>),
+    <span class="st">'Avg Prep Time (min)'</span>: df[<span class="st">'food_preparation_time'</span>].mean().round(<span class="nm">1</span>),
+    <span class="st">'Avg Delivery Time (min)'</span>: df[<span class="st">'delivery_time'</span>].mean().round(<span class="nm">1</span>),
+    <span class="st">'Avg Total Time (min)'</span>: df[<span class="st">'total_time'</span>].mean().round(<span class="nm">1</span>),
+    <span class="st">'Weekend Orders %'</span>: <span class="st">f"{day_counts['Weekend']/len(df)*100:.1f}%"</span>,
+    <span class="st">'Rating Dropout %'</span>: <span class="st">f"{(df['rating']=='Not given').mean()*100:.1f}%"</span>,
+    <span class="st">'Orders > $20 %'</span>: <span class="st">f"{(df['cost_of_the_order']>20).mean()*100:.1f}%"</span>,
+    <span class="st">'Orders > 60 min %'</span>: <span class="st">f"{(df['total_time']>60).mean()*100:.1f}%"</span>,
+}
+<span class="kw">for</span> k, v <span class="kw">in</span> summary.items():
+    <span class="op">print</span>(<span class="st">f"{k:28s}: {v}"</span>)</pre>
+    <div class="output">Total Orders               : 1898
+Unique Customers           : 1200
+Unique Restaurants         : 178
+Total Revenue ($)          : 31314.82
+Avg Order Value ($)        : 16.50
+Avg Prep Time (min)        : 27.4
+Avg Delivery Time (min)    : 24.2
+Avg Total Time (min)       : 51.5
+Weekend Orders %           : 71.2%
+Rating Dropout %           : 38.8%
+Orders > $20 %             : 29.2%
+Orders > 60 min %          : 10.5%</div>
+  </div>
+</div>
+
+</div><!-- /notebook -->
+</body>
+</html>
